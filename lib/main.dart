@@ -1,75 +1,79 @@
-
 import 'package:flutter/material.dart';
-import 'package:fan_control/bluetooth_service.dart';
-import 'package:get/get.dart';
-import 'package:flutter_blue/flutter_blue.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'fan_controller.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Fan Controller',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Fan Controller'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key,});
+  MyHomePage({Key? key, this.title= "Fan Controller"}) : super(key: key);
+
+  final String title;
+
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  const MyHomePage({super.key});
+  List<BluetoothDevice> _devicesList = [];
+  FlutterBluetoothSerial _bluetooth = FlutterBluetoothSerial.instance;
+
   @override
-  State<MyHomePage> createState()=>_MyHomePageState();
+  void initState() {
+    super.initState();
+    _getDevices();
+  }
+
+  void _getDevices() async {
+    List<BluetoothDevice> devices = [];
+
+    try {
+      devices = await _bluetooth.getBondedDevices();
+    } catch (e) {
+      print('Error getting bonded devices: $e');
+    }
+
+    setState(() {
+      _devicesList = devices;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('scanner'),
+        title: Text(widget.title),
       ),
-    body: GetBuilder<fan>(
-    init: fan(),
-    builder: (fan controller)
-    {
-      return Center(
-      child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      StreamBuilder<List<ScanResult>(stream: controller.scanResults, builder:(context.snapshot){
-        if(snapshot.hasData){
-          return ListView.builder(itemBuilder: (context,index){
-            final data = snapshot.data(index);
-            return Card(elevation: 2, child: ListTile(title: Text(data.device.name),
-    subtitle: Text(data.device.id.id),
-    trailing: Text(data.rssi.toString())
-    ,)
-    ,)
-    })
-    }
-        else{
-          return Center(child: Text ("No Device Found"),);
-    }
-    })
-      SizedBox(height: 10,),
-      ElevatedButton(onPressed:()=>controller.scanDevices(), child: Text("SCAN"))
-    ],
+      body: ListView.builder(
+        itemCount: _devicesList.length,
+        itemBuilder: (BuildContext context, int index) {
+          return ListTile(
+            title: Text(_devicesList[index].address),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      FanController(device: _devicesList[index]),
+                ),
+              );
+            },
+          );
+        },
       ),
-      )
-    },
-    ),
+    );
   }
 }

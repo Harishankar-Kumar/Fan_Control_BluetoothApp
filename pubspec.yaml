@@ -38,6 +38,7 @@ dependencies:
   flutter_blue: ^0.8.0
   get:
   permission_handler:
+  flutter_bluetooth_serial:
 
 dev_dependencies:
   flutter_test:

@@ -1,18 +1,27 @@
-import 'package:flutter_blue/flutter_blue.dart';
-import 'package:get/get.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
 
-class fan extends GetxController{
-  FlutterBlue control = FlutterBlue.instance;
+class BluetoothService {
+  late BluetoothConnection connection;
 
-  Future scanDevices() async{
-    if(await Permission.bluetoothScan.request().isGranted){
-      if (await Permission.bluetoothConnect.request().isGranted){
-        control.startScan(timeout: Duration(seconds: 7));
-
-        control.stopScan();
-      }
+  Future<bool> connectToDevice(BluetoothDevice device) async {
+    try {
+      connection = await BluetoothConnection.toAddress(device.address);
+      return true;
+    } catch (e) {
+      print('Error connecting to device: $e');
+      return false;
     }
   }
-  Stream<List<ScanResult>> get scanResults => control.scanResults;
+
+  void sendMessage(String message) {
+    connection.output.add(utf8.encode(message + "\r\n"));
+    connection.output.allSent.then((_) {
+      print('Sent: $message');
+    });
+  }
+
+  void disconnect() {
+    connection.close();
+  }
 }
